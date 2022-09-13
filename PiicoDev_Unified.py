@@ -1,14 +1,11 @@
 """
 PiicoDev-Unified compatible minified code for Machine builds only (eg ESP32, ESP8266, Rasperry Pi Pico) specifically for the memory (ram) starved ESP8266
 """
-import os
-
 compat_ind = 1
-i2c_err_str = "PiicoDev could not communicate with module at address 0x{:02X}, check wiring"
-
-from machine import I2C
-from utime import sleep_ms
-
+i2c_err_str = (
+    "PiicoDev could not communicate with module at address 0x{:02X}, check wiring"
+)
+from machine import I2C, Pin
 class I2CBase:
     def writeto_mem(self, addr, memaddr, buf, *, addrsize=8):
         raise NotImplementedError("writeto_mem")
@@ -25,15 +22,10 @@ class I2CBase:
     def __init__(self, bus=None, freq=None, sda=None, scl=None):
         raise NotImplementedError("__init__")
 
-class I2CUnifiedMachine(I2CBase):
-    def __init__(self, bus=None, freq=None, sda=None, scl=None):
-        if bus is None:
-            bus = 0
-        if freq is not None and sda is not None and scl is not None:
-            print("Using supplied freq, sda and scl to create machine I2C")
-            self.i2c = I2C(bus, freq=freq, sda=sda, scl=scl)
-        else:
-            self.i2c = I2C(bus)
+class I2CUnifiedMachine8266(I2CBase):
+    def __init__(self):
+
+        self.i2c = I2C(freq=100000, sda=Pin(4), scl=Pin(5))
 
         self.writeto_mem = self.i2c.writeto_mem
         self.readfrom_mem = self.i2c.readfrom_mem
@@ -43,11 +35,11 @@ class I2CUnifiedMachine(I2CBase):
             self.i2c.writeto(addr, data)
         else:
             self.i2c.writeto(addr, reg + data)
-            
+
     def read16(self, addr, reg):
         self.i2c.writeto(addr, reg, False)
         return self.i2c.readfrom(addr, 2)
 
 def create_unified_i2c(bus=None, freq=None, sda=None, scl=None):
-    i2c = I2CUnifiedMachine(bus=bus, freq=freq, sda=sda, scl=scl)
+    i2c = I2CUnifiedMachine8266()
     return i2c
